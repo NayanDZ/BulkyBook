@@ -1,0 +1,6 @@
+2025-03-26T15:48:43.724+0530 INFO Logger initialized
+2025-03-26T15:48:43.724+0530 INFO Starting AI scanner
+2025-03-26T15:48:47.571+0530 WARN Failed loading AI Project Configurations from Mend Platform, will use default settings
+2025-03-26T15:48:47.571+0530 DEBUG Updating scan parameters from platform settings {"settings": {"MODEL_DETECTION_ENABLED":true,"SNIPPET_LINES":5,"SNIPPET_SEND_ENABLED":false}}
+2025-03-26T15:48:47.573+0530 DEBUG Scanning code for AI models {"projectUUID": "bbd1ba02-ce0a-48f1-b1d7-d32bcd6869e0"}
+2025-03-26T15:48:47.574+0530 DEBUG Reading update request file {"path": "C:\\Users\\NXZalavadiya\\.mend\\logs\\sca\\update-request.txt"}

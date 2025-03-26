@@ -1,0 +1,52 @@
+trigger:
+- master
+
+pool:
+  vmImage: 'windows-latest' # Use a Windows image because it comes with .NET Core SDKs pre-installed
+
+variables:
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+  group: 'Mend Variable Group for Pipelines - KV'
+
+jobs:
+- job: BuildAndTest
+  displayName: 'Build and Test ASP.NET Core App'
+  steps:
+  
+  - task: NuGetToolInstaller@1
+
+  - task: NuGetCommand@2
+    inputs:
+      restoreSolution: '$(solution)'
+
+  - task: VSBuild@1
+    inputs:
+      solution: '$(solution)'
+      msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactStagingDirectory)\WebApp.zip" /p:DeployIisAppPath="Default Web Site"'
+      platform: '$(buildPlatform)'
+      configuration: '$(buildConfiguration)'
+
+  - task: VSTest@2
+    inputs:
+      platform: '$(buildPlatform)'
+      configuration: '$(buildConfiguration)'
+
+  - powershell: |
+      ### Write your PowerShell commands here ###
+   
+      echo "Downloading Mend CLI"
+      Invoke-WebRequest -Uri "https://downloads.mend.io/cli/windows_amd64/mend.exe" -OutFile "mend.exe"
+   
+      echo "Start Mend dependencies (SCA) scan"
+      ./mend.exe deps -u -s *//$(MendProductName)//$(Build.Repository.Name)_$(Build.SourceBranchName)
+      ### Run Mend code (SAST) scan ###
+      echo "Start Mend code (SAST) scan"
+      ./mend.exe code --name=$(MendProductName)_$(Build.SourceBranchName)_$(Build.BuildNumber) --app "$(system.teamProject)"
+    errorActionPreference: continue
+    continueOnError: true
+
+
+
+

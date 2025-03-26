@@ -1,0 +1,43 @@
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'release'
+  group: 'Mend Variable Group for Pipelines - KV'
+
+jobs:
+- job: BuildAndTest
+  displayName: 'Build and Test ASP.NET Core App'
+
+  steps:
+  - task: NuGetCommand@2
+    displayName: 'Restore NuGet packages'
+    inputs:
+      command: 'restore'
+      restoreSolution: '$(solution)'
+  - task: VSBuild@1
+    displayName: 'Visual Studio Build'
+    inputs:
+      solution: '$(solution)'
+      msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactStagingDirectory)\WebApp.zip" /p:DeployIisAppPath="Default Web Site"'
+      platform: '$(buildPlatform)'
+      configuration: '$(buildConfiguration)'
+  - powershell: |
+      echo "Removing current Mend CLI"
+      Remove-Item -Path ".\mend.exe" -Force -ErrorAction SilentlyContinue
+      echo "Downloading Mend CLI"
+      Invoke-WebRequest -Uri "https://downloads.mend.io/cli/windows_amd64/mend.exe" -OutFile "mend.exe"
+      echo "Start-> Mend (Dependencies) scan"
+      ./mend.exe dep -u -s "//$(system.teamProject)//$(MendProductName)_$(Build.Repository.Name)_$(Build.SourceBranchName)"
+      echo "Start-> Mend (SAST) Scan"
+      ./mend.exe code --name=$(MendProductName)_$(Build.SourceBranchName)_$(Build.BuildNumber) --app "$(system.teamProject)"  
+    displayName: "Mend Scan"
+    errorActionPreference: continue
+    continueOnError: true
+    env:
+      MEND_EMAIL: $(mendemail)
+      MEND_ORGANIZATION: $(mendorganization)
+      MEND_URL: $(mendurl)
+      MEND_USER_KEY: $(menduserkey)
